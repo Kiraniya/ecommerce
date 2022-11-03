@@ -1,0 +1,72 @@
+<html>
+<head>
+<title>Registration</title>
+<script type="text/javascript" src="{{ url_for('static', filename = 'js/validateForm.js') }}">
+</script>
+<link rel="stylesheet" href={{url_for('static', filename='css/register.css')}} />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Account Registration</h2>
+    </div>
+    <form id="form" class="form" action="/register" method="POST" onsubmit="return validate()">
+      <div class="form-control">
+        <table>
+          <tr>
+            <td class="td1">
+              <label for="username">Email</label>
+            <input type="email" name="email"></td>
+            <td class="td2">
+              <label for="password">Password</label>
+              <input type="password" name="password" id="password" required>
+            </td>
+            <td class="td3"><label for="username">Confirm Password</label>
+            <input type="password" name="cpassword" id="cpassword"></td>
+          </tr>
+        </table>
+      </div>
+      <div class="form-control">
+        <table>
+          <tr>
+            <td class="td1"><label for="username">First Name</label>
+            <input type="text" name="firstName"></td>
+            <td class="td2"><label for="username">Last Name</label>
+            <input type="text" name="lastName"></td>
+            <td class="td3"><label for="username">Address Line 1</label>
+            <input type="text" name="address1"></td>
+          </tr>
+        </table>
+      </div>
+      <div class="form-control">
+        <table>
+          <tr>
+            <td class="td1"><label for="username">Address Line 2</label>
+            <input type="text" name="address2"></td>
+            <td class="td2"><label for="username">Zipcode</label>
+            <input type="text" name="zipcode"></td>
+            <td class="td3"><label for="username">City</label>
+            <input type="text" name="city"></td>
+          </tr>
+        </table>
+      </div>
+      <div class="form-control">
+        <table>
+          <tr>
+            <td class="td1"><label for="username">State</label>
+            <input type="text" name="state"></td>
+            <td class="td2"><label for="username">Country</label>
+            <input type="text" name="country"></td>
+            <td class="td3"><label for="username">Phone Number</label>
+            <input type="text" name="phone"></td>
+          </tr>
+        </table>
+      </div>
+      <input type="submit" value="Register" class='button'>
+      <div class='a_class'>
+        <a href="/loginForm" class='a_tag'>Login here</a>
+      </div>
+    </form>
+   </div>
+</body>
+</html>
