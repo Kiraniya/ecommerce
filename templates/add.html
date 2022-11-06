@@ -2,22 +2,66 @@
 <html>
 <head>
 <title>Admin</title>
+<link rel="stylesheet" href={{url_for('static', filename='css/cart.css')}} />
+<link rel="stylesheet" href={{url_for('static', filename='css/topStyle.css')}} />
 </head>
 <body>
+<div id="title">
+	<a href="">
+		<img id="logo" src= {{ url_for('static', filename='images/logo.png') }} />
+	</a>
+	<form action="/ssearch" method='POST'>
+		<input id="searchBox" type="text" name="searchQuery">
+		<input id="searchButton" type="submit" value="Search">
+	</form>
+
+	<div class="dropdown">
+		<button class="dropbtn">Hello, <br>{{Name}}</button>
+		<div class="dropdown-content">
+			<a href="/add">Add a Product</a>
+			<a href="/remove">Remove a Product</a>
+			<hr>
+			<a href="/logout">Sign Out</a>
+		</div>
+	</div>
+
+</div>
 <h2>Add items</h2>
-<form action="/addItem" method="POST" enctype="multipart/form-data">
-	Name: <input type="text" name="name"><br>
-	Price: <input type="text" name="price"><br>
-	Description: <textarea name="description" rows=3 cols="40"></textarea><br>
-	Image: <input type="file" name="image"><br>
-	Stock: <input type="text" name="stock"><br>
-	Category: <select name="category">
+
+<div class="container">
+		<div class="header">
+			<h2>Account Registration</h2>
+		</div>
+		<form id="form" class="form" action="/addItem" method="POST" enctype="multipart/form-data">
+			<div class="form-control">
+				<label for="email">Name</label>
+				<input type="text" name="name">
+			</div><br>
+			<div class="form-control">
+				<label for="email">Price</label>
+				<input type="text" name="price">
+			</div><br>
+			<div class="form-control">
+				<label for="email">Description</label>
+				<input type="text" name="description">
+			</div><br>
+			<div class="form-control">
+				<label for="email">Image</label>
+				<input type="file" name="image">
+			</div><br>
+			<div class="form-control">
+				<label for="email">Stock</label>
+				<input type="text" name="stock">
+			</div><br>
+			Category: <select name="category">
 		{% for row in categories %}
 			<option value="{{row[0]}}">{{row[1]}}</option>
 		{% endfor %}
-	</select><br>
-	<input type="submit">
-</form>
+	</select><br><br>
+			<button>Submit</button>
+		</form>
+		</div>
+		
 </body>
 </html>
 

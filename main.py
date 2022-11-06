@@ -41,14 +41,21 @@ def getSellerLoginDetails():
 @app.route("/")
 def root():
     loggedIn, firstName, noOfItems = getLoginDetails()
+    orderData = None
     with sqlite3.connect('database.db') as conn:
         cur = conn.cursor()
         cur.execute('SELECT productId, name, price, description, image, stock FROM products')
         itemData = cur.fetchall()
         cur.execute('SELECT categoryId, name FROM categories')
         categoryData = cur.fetchall()
+        if(loggedIn):
+        	cur.execute('SELECT userId FROM users WHERE email = ?', (session['email'], ))
+        	userId = cur.fetchone()[0]
+        	cur.execute("SELECT productId, name, price, description, image, stock FROM products, (SELECT avg(r) as avg_r from (SELECT categoryID, avg(rating) as r FROM 'order', products, reviews where 'order'.productId=reviews.productId and 'order'.productId=products.productId and 'order'.userID ='"+str(userId)+"' group by categoryId)), (SELECT categoryID, avg(rating) as r FROM 'order', products, reviews where 'order'.productId=reviews.productId and 'order'.productId=products.productId and 'order'.userID ='"+str(userId)+"' group by categoryId) x where products.categoryId = x.categoryId and r>=avg_r")
+        	orderData = cur.fetchall()
+        	orderData = parse(orderData)
     itemData = parse(itemData)
-    return render_template('home.html', itemData=itemData, loggedIn=loggedIn, firstName=firstName, noOfItems=noOfItems, categoryData=categoryData)
+    return render_template('home.html', itemData=itemData, loggedIn=loggedIn, firstName=firstName, noOfItems=noOfItems, categoryData=categoryData, orderData=orderData)
 
 @app.route("/add")
 def addproduct():
@@ -84,7 +91,6 @@ def addItem():
     			msg="error occured"
     			conn.rollback()
     	conn.close()
-    	print(msg)
     	return redirect(url_for('seller'))
 
 @app.route("/remove")
@@ -110,7 +116,6 @@ def removeItem():
             conn.rollback()
             msg = "Error occured"
     conn.close()
-    print(msg)
     return redirect(url_for('seller'))
 
 @app.route("/displayCategory")
@@ -227,9 +232,12 @@ def productDescription():
         cur = conn.cursor()
         cur.execute('SELECT productId, name, price, description, image, stock FROM products WHERE productId = ?', (productId, ))
         productData = cur.fetchone()
+        cur.execute('SELECT * from reviews WHERE productID = ?', (productId, ))
+        reviewData = cur.fetchall()
+        cur.execute("SELECT round(avg(rating),1) FROM reviews WHERE productId = ?", (productId, ) )
+        avgR = cur.fetchone()[0]
     conn.close()
-    return render_template("productDescription.html", data=productData, loggedIn = loggedIn, firstName = firstName, noOfItems = noOfItems)
-
+    return render_template("productDescription.html", rdata=reviewData,data=productData, loggedIn = loggedIn, firstName = firstName, noOfItems = noOfItems,avgR=avgR)
 @app.route("/addToCart")
 def addToCart():
     if 'email' not in session:
@@ -249,7 +257,29 @@ def addToCart():
                 msg = "Error occured"
         conn.close()
         return redirect(url_for('root'))
-
+@app.route("/reviewAdd",methods=['POST'])
+def addreview():
+    cust_review=request.form['reviewCust']
+    ratings=int(request.form['rate'])
+    prodId=request.args.get('productId')
+    if 'email' not in session:
+        return redirect(url_for('loginForm'))
+    else:
+        with sqlite3.connect('database.db') as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT userId FROM users WHERE email = ?", (session['email'], ))
+            userId = cur.fetchone()[0]
+            cur.execute("SELECT firstName FROM users WHERE userId = ?", (userId, ))
+            nameCust = cur.fetchone()[0]
+            try:
+                cur.execute("INSERT INTO reviews VALUES (?, ?, ?, ?, ?)", (userId,prodId,ratings,cust_review,nameCust))
+                conn.commit()
+                msg = "Added successfully"
+            except:
+                conn.rollback()
+                msg = "Error occured"
+        conn.close()
+        return redirect(url_for('root'))
 @app.route("/cart")
 def cart():
     if 'email' not in session:
@@ -356,6 +386,27 @@ def register():
 def registrationForm():
     return render_template("register.html")
 
+@app.route("/checkout")
+def checkout():
+	if 'email' not in session:
+		return redirect(url_for('loginForm'))
+	loggedIn, firstName, noOfItems = getLoginDetails()
+	email = session['email']
+	with sqlite3.connect('database.db') as conn:
+		cur = conn.cursor()
+		cur.execute("SELECT userId from users where email = '"+email+"'")
+		itemData = cur.fetchone()
+		userid = itemData[0]
+		cur.execute("SELECT productId from kart where userId = '"+str(userid)+"'")
+		itemData = cur.fetchall()
+		for x in itemData:
+			cur.execute('INSERT INTO "order" (productID,userID) VALUES (?, ?)', (x[0],userid))
+		cur.execute("DELETE from kart where userId = '"+str(userid)+"'")
+		conn.commit()
+	loggedIn, firstName, noOfItems = getLoginDetails()
+	return render_template("ordercheckedout.html", loggedIn=loggedIn, firstName=firstName, noOfItems=noOfItems)
+
+
 @app.route('/sellerhome')
 def seller():
     sellerid, name = getSellerLoginDetails()
@@ -363,12 +414,11 @@ def seller():
         cur = conn.cursor()
         cur.execute('SELECT productId, name, price, description, image, stock FROM products where SellerID = '+str(sellerid))
         itemData = cur.fetchall()
-        print(itemData)
         categoryData = cur.fetchall()
     itemData = parse(itemData)
     return render_template('sellerhome.html', itemData=itemData, Name=name)
 
-@app.route("/sellerloginForm")
+@app.route("/sellerloginForm", methods=['POST','GET'])
 def sellerloginForm():
     if 'email' in session:
         return redirect(url_for('seller'))
@@ -386,6 +436,31 @@ def sellerlogin():
         else:
         	error = 'Invalid UserId / Password'
         	return redirect(url_for('sellerloginForm'),error=error)
+
+@app.route("/sellerregister", methods = ['GET', 'POST'])
+def sellerregister():
+    if request.method == 'POST':
+        password = request.form['password']
+        email = request.form['email']
+        Name = request.form['Name']
+
+        with sqlite3.connect('database.db') as con:
+            try:
+                cur = con.cursor()
+                cur.execute('INSERT INTO seller (password, email, Name) VALUES (?, ?, ?)', password, email, Name)
+
+                con.commit()
+
+                msg = "Registered Successfully"
+            except:
+                con.rollback()
+                msg = "Error occured"
+        con.close()
+        return render_template("sellerlogin.html")
+
+@app.route("/sellerregisterationForm")
+def sellerregistrationForm():
+    return render_template("sellerregister.html")
 
 @app.route("/sellerproductDescription")
 def sellerproductDescription():
@@ -420,6 +495,40 @@ def adminlogin():
         else:
             error = 'Invalid UserId / Password'
             return render_template('adminlogin.html', error=error)
+
+
+@app.route("/search", methods = ['POST','GET'])
+def search():
+	if request.method == 'POST':
+		loggedIn, firstName, noOfItems = getLoginDetails()
+		squery = request.form['searchQuery']
+		with sqlite3.connect('database.db') as conn:
+		    cur = conn.cursor()
+		    sql = "SELECT productId, name, price, description, image, stock FROM products WHERE name like '%"+squery+"%' or description like '%"+squery+"%'"
+		    cur.execute(sql)
+		    itemData = cur.fetchall()
+		    cur.execute('SELECT categoryId, name FROM categories')
+		    categoryData = cur.fetchall()
+		    itemData = parse(itemData)
+		conn.close()
+		return render_template('home.html', itemData=itemData, loggedIn=loggedIn, firstName=firstName, noOfItems=noOfItems, categoryData=categoryData, orderData=[])
+
+
+@app.route("/ssearch", methods = ['POST','GET'])
+def ssearch():
+	if request.method == 'POST':
+		sellerid, name = getSellerLoginDetails()
+		squery = request.form['searchQuery']
+		with sqlite3.connect('database.db') as conn:
+		    cur = conn.cursor()
+		    sql = "SELECT productId, name, price, description, image, stock FROM products WHERE name like '%"+squery+"%' or description like '%"+squery+"%' and SellerID = "+str(sellerid)
+		    cur.execute(sql)
+		    itemData = cur.fetchall()
+		    itemData = parse(itemData)
+		conn.close()
+		return render_template('sellerhome.html', itemData=itemData, Name=name)
+
+
 
 def allowed_file(filename):
     return '.' in filename and \

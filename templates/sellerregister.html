@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>Registration</title>
+<link rel="stylesheet" href={{url_for('static', filename='css/seller.css')}} />
+<script type="text/javascript" src="{{ url_for('static', filename = 'js/validateForm.js') }}">
+</script>
+</head>
+<body>
+
+
+<div class="container">
+		<div class="header">
+			<h2>Account Registration</h2>
+		</div>
+		<form id="form" class="form" action="/sellerlogin" method="POST">
+			<div class="form-control">
+				<label for="email">Email</label>
+				<input type="text" name="email">
+			</div>
+			<div class="form-control">
+				<label for="username">Password</label>
+				<input type="password" name="password">
+			</div>
+			<div class="form-control">
+				<label for="email">Confirm Password</label>
+				<input type="password" name="cpassword">
+			</div>
+			<div class="form-control">
+				<label for="username">Name</label>
+				<input type="text" name="Name">
+			</div>
+			<button>Submit</button>
+			<a href="/sellerloginForm">Login here</a><br>
+		</form>
+		</div>
+</body>
+</html>
+
+

@@ -32,5 +32,10 @@
 #addToCart {
 	font-size: 20px;
 }
-
+.review {
+	margin: 20px;
+}
+#review input {
+	margin: 10px;
+}
 
